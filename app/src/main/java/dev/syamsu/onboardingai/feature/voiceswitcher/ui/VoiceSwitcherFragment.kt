@@ -7,7 +7,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.addCallback
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -122,28 +121,32 @@ class VoiceSwitcherFragment : Fragment() {
     return createScreen()
   }
 
+  private fun onClickNext() {
+    if (!isVisible) return
+    val currentActivity = activity
+    val currentProps = voiceSwitcherVm.voiceSwitcherProps
+    if (currentActivity is MainActivity &&
+        currentProps.currentVoiceFile != null &&
+        currentProps.currentVoiceId != null &&
+        currentProps.currentSampleId != null) {
+      currentActivity.navigateToWelcomeFragment(
+          voiceFile = currentProps.currentVoiceFile,
+          voiceId = currentProps.currentVoiceId,
+          sampleId = currentProps.currentSampleId,
+      )
+    }
+  }
+
   private fun createScreen() =
       ComposeView(requireContext()).apply {
         setContent {
           AiAppTheme {
             Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
-              val activity = LocalActivity.current
               val callback = remember {
                 VoiceSwitcherCallback(
                     onClickRadio = voiceSwitcherVm::chooseVoiceName,
-                    onClickNext = {
-                      val currentProps = voiceSwitcherVm.voiceSwitcherProps
-                      if (activity is MainActivity &&
-                          currentProps.currentVoiceFile != null &&
-                          currentProps.currentVoiceId != null &&
-                          currentProps.currentSampleId != null) {
-                        activity.navigateToWelcomeFragment(
-                            voiceFile = currentProps.currentVoiceFile,
-                            voiceId = currentProps.currentVoiceId,
-                            sampleId = currentProps.currentSampleId,
-                        )
-                      }
-                    })
+                    onClickNext = this@VoiceSwitcherFragment::onClickNext,
+                )
               }
               VoiceSwitcherScreen(
                   props = voiceSwitcherVm.voiceSwitcherProps,
