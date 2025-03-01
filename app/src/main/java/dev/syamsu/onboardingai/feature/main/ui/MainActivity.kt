@@ -15,38 +15,40 @@ import java.io.File
 
 class MainActivity : FragmentActivity() {
 
-    private val fragmentContainerViewId = View.generateViewId()
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge(statusBarStyle = SystemBarStyle.light(Orange600.toArgb(), Orange600.toArgb()))
-        val fragmentContainer = FrameLayout(this).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-            )
-            id = fragmentContainerViewId
+  private val fragmentContainerViewId = View.generateViewId()
+
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    enableEdgeToEdge(statusBarStyle = SystemBarStyle.light(Orange600.toArgb(), Orange600.toArgb()))
+    val fragmentContainer =
+        FrameLayout(this).apply {
+          layoutParams =
+              ViewGroup.LayoutParams(
+                  FrameLayout.LayoutParams.MATCH_PARENT,
+                  FrameLayout.LayoutParams.WRAP_CONTENT,
+              )
+          id = fragmentContainerViewId
         }
-        setContentView(fragmentContainer)
-        navigateToVoiceSwitcherFragment()
-    }
+    setContentView(fragmentContainer)
+    navigateToVoiceSwitcherFragment()
+  }
 
-    private fun navigateToVoiceSwitcherFragment() {
-        supportFragmentManager.beginTransaction()
-            .replace(
-                fragmentContainerViewId,
-                VoiceSwitcherFragment.newInstance(),
-                "VoiceSwitcherFragment"
-            )
-            .commitAllowingStateLoss()
-    }
+  fun navigateToVoiceSwitcherFragment() {
+    supportFragmentManager
+        .beginTransaction()
+        .replace(
+            fragmentContainerViewId, VoiceSwitcherFragment.newInstance(), "VoiceSwitcherFragment")
+        .commitAllowingStateLoss()
+  }
 
-    fun navigateToOnboardedFragment(voiceFile: File, voiceId: Int, sampleId: Int) {
-        supportFragmentManager.beginTransaction()
-            .replace(
-                fragmentContainerViewId,
-                WelcomeFragment.newInstance(voiceFile, voiceId, sampleId),
-                "WelcomeFragment",
-            )
-            .commitAllowingStateLoss()
-    }
+  fun navigateToWelcomeFragment(voiceFile: File, voiceId: Int, sampleId: Int) {
+    supportFragmentManager
+        .beginTransaction()
+        .replace(
+            fragmentContainerViewId,
+            WelcomeFragment.newInstance(voiceFile, voiceId, sampleId),
+            "WelcomeFragment",
+        )
+        .commitAllowingStateLoss()
+  }
 }

@@ -9,14 +9,16 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 
-fun createKtorClient() = HttpClient(CIO) {
-    install(Logging) {
-        logger = object : Logger {
-            override fun log(message: String) {
+fun createKtorClient() =
+    HttpClient(CIO) {
+      install(Logging) {
+        logger =
+            object : Logger {
+              override fun log(message: String) {
                 if (BuildConfig.DEBUG) Log.d("ktor", message)
+              }
             }
-        }
         level = LogLevel.HEADERS
+      }
+      install(HttpCache)
     }
-    install(HttpCache)
-}

@@ -12,40 +12,44 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import dev.syamsu.onboardingai.feature.welcome.data.WelcomeRepositoryImpl
 import dev.syamsu.onboardingai.feature.welcome.domain.WelcomeRepository
-import kotlinx.coroutines.launch
 import java.io.File
+import kotlinx.coroutines.launch
 
 class WelcomeViewModel(
     private val welcomeRepository: WelcomeRepository,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
-    val voiceFile: File?
-        get() = savedStateHandle[WelcomeFragment.ARG_FILE]
-    var transcription: String? by mutableStateOf(null)
-        private set
-    private val voiceSampleId: Int?
-        get() = savedStateHandle[WelcomeFragment.ARG_SAMPLE_ID]
-    private val voiceId: Int?
-        get() = savedStateHandle[WelcomeFragment.ARG_VOICE_ID]
+  val voiceFile: File?
+    get() = savedStateHandle[WelcomeFragment.ARG_FILE]
 
-    init {
-        val currentVoiceId = voiceId
-        val currentVoiceSampleId = voiceSampleId
-        if (currentVoiceId != null && currentVoiceSampleId != null) {
-            viewModelScope.launch {
-                transcription =
-                    welcomeRepository.getTranscription(voiceId = currentVoiceId, voiceSampleId = currentVoiceSampleId)
-            }
-        }
-    }
+  var transcription: String? by mutableStateOf(null)
+    private set
 
-    companion object {
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val savedStateHandle = this.createSavedStateHandle()
-                val welcomeRepository = WelcomeRepositoryImpl()
-                WelcomeViewModel(welcomeRepository, savedStateHandle)
-            }
-        }
+  private val voiceSampleId: Int?
+    get() = savedStateHandle[WelcomeFragment.ARG_SAMPLE_ID]
+
+  private val voiceId: Int?
+    get() = savedStateHandle[WelcomeFragment.ARG_VOICE_ID]
+
+  init {
+    val currentVoiceId = voiceId
+    val currentVoiceSampleId = voiceSampleId
+    if (currentVoiceId != null && currentVoiceSampleId != null) {
+      viewModelScope.launch {
+        transcription =
+            welcomeRepository.getTranscription(
+                voiceId = currentVoiceId, voiceSampleId = currentVoiceSampleId)
+      }
     }
+  }
+
+  companion object {
+    val Factory: ViewModelProvider.Factory = viewModelFactory {
+      initializer {
+        val savedStateHandle = this.createSavedStateHandle()
+        val welcomeRepository = WelcomeRepositoryImpl()
+        WelcomeViewModel(welcomeRepository, savedStateHandle)
+      }
+    }
+  }
 }

@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.addCallback
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -75,106 +76,105 @@ import java.io.File
 
 class VoiceSwitcherFragment : Fragment() {
 
-    private var player: ExoPlayer? = null
-    private val voiceSwitcherVm by viewModels<VoiceSwitcherViewModel>(
-        factoryProducer = { VoiceSwitcherViewModel.Factory }
-    )
+  private var player: ExoPlayer? = null
+  private val voiceSwitcherVm by
+      viewModels<VoiceSwitcherViewModel>(factoryProducer = { VoiceSwitcherViewModel.Factory })
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        player = ExoPlayer.Builder(requireActivity()).build()
-        player?.addListener(object : Player.Listener {
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                super.onPlaybackStateChanged(playbackState)
-                if (playbackState == Player.STATE_ENDED) {
-                    player?.clearMediaItems()
-                    voiceSwitcherVm.onVoiceEnded()
-                }
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    activity?.onBackPressedDispatcher?.addCallback(owner = this) { activity?.finish() }
+    player = ExoPlayer.Builder(requireActivity()).build()
+    player?.addListener(
+        object : Player.Listener {
+          override fun onPlaybackStateChanged(playbackState: Int) {
+            super.onPlaybackStateChanged(playbackState)
+            if (playbackState == Player.STATE_ENDED) {
+              player?.clearMediaItems()
+              voiceSwitcherVm.onVoiceEnded()
             }
+          }
 
-            override fun onPlayerError(error: PlaybackException) {
-                super.onPlayerError(error)
-                if (BuildConfig.DEBUG) {
-                    Log.d("ExoPlayer", "${error.message}")
-                }
+          override fun onPlayerError(error: PlaybackException) {
+            super.onPlayerError(error)
+            if (BuildConfig.DEBUG) {
+              Log.d("ExoPlayer", "${error.message}")
             }
+          }
         })
-    }
+  }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        player = null
-    }
+  override fun onDestroy() {
+    super.onDestroy()
+    player = null
+  }
 
-    override fun onStop() {
-        super.onStop()
-        player?.stop()
-        player?.release()
-    }
+  override fun onStop() {
+    super.onStop()
+    player?.stop()
+    player?.release()
+  }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return createScreen()
-    }
+  override fun onCreateView(
+      inflater: LayoutInflater,
+      container: ViewGroup?,
+      savedInstanceState: Bundle?
+  ): View {
+    return createScreen()
+  }
 
-    private fun createScreen() = ComposeView(requireContext()).apply {
+  private fun createScreen() =
+      ComposeView(requireContext()).apply {
         setContent {
-            AiAppTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
-                    val activity = LocalActivity.current
-                    val callback =
-                        remember {
-                            VoiceSwitcherCallback(
-                                onClickRadio = voiceSwitcherVm::chooseVoiceName,
-                                onClickNext = {
-                                    val currentProps = voiceSwitcherVm.voiceSwitcherProps
-                                    if (activity is MainActivity &&
-                                        currentProps.currentVoiceFile != null &&
-                                        currentProps.currentVoiceId != null &&
-                                        currentProps.currentSampleId != null
-                                    ) {
-                                        activity.navigateToOnboardedFragment(
-                                            voiceFile = currentProps.currentVoiceFile,
-                                            voiceId = currentProps.currentVoiceId,
-                                            sampleId = currentProps.currentSampleId,
-                                        )
-                                    }
-                                })
-                        }
-                    VoiceSwitcherScreen(
-                        props = voiceSwitcherVm.voiceSwitcherProps,
-                        callback = callback,
-                        modifier = Modifier.padding(padding)
-                    )
-                    LaunchedEffect(
-                        voiceSwitcherVm.voiceSwitcherProps.shouldPlayVoice,
-                        voiceSwitcherVm.voiceSwitcherProps.currentVoiceFile,
-                    ) {
-                        if (voiceSwitcherVm.voiceSwitcherProps.shouldPlayVoice) {
-                            playAudioFile(file = voiceSwitcherVm.voiceSwitcherProps.currentVoiceFile)
-                        }
-                    }
+          AiAppTheme {
+            Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
+              val activity = LocalActivity.current
+              val callback = remember {
+                VoiceSwitcherCallback(
+                    onClickRadio = voiceSwitcherVm::chooseVoiceName,
+                    onClickNext = {
+                      val currentProps = voiceSwitcherVm.voiceSwitcherProps
+                      if (activity is MainActivity &&
+                          currentProps.currentVoiceFile != null &&
+                          currentProps.currentVoiceId != null &&
+                          currentProps.currentSampleId != null) {
+                        activity.navigateToWelcomeFragment(
+                            voiceFile = currentProps.currentVoiceFile,
+                            voiceId = currentProps.currentVoiceId,
+                            sampleId = currentProps.currentSampleId,
+                        )
+                      }
+                    })
+              }
+              VoiceSwitcherScreen(
+                  props = voiceSwitcherVm.voiceSwitcherProps,
+                  callback = callback,
+                  modifier = Modifier.padding(padding))
+              LaunchedEffect(
+                  voiceSwitcherVm.voiceSwitcherProps.shouldPlayVoice,
+                  voiceSwitcherVm.voiceSwitcherProps.currentVoiceFile,
+              ) {
+                if (voiceSwitcherVm.voiceSwitcherProps.shouldPlayVoice) {
+                  playAudioFile(file = voiceSwitcherVm.voiceSwitcherProps.currentVoiceFile)
                 }
+              }
             }
+          }
         }
-    }
+      }
 
-    private fun playAudioFile(file: File?) {
-        if (file == null) return
-        val newMediaItem = MediaItem.fromUri(Uri.fromFile(file))
-        if (player?.currentMediaItem == newMediaItem) return
-        if (player?.isPlaying == true) player?.stop()
-        player?.setMediaItem(newMediaItem)
-        player?.prepare()
-        player?.play()
-    }
+  private fun playAudioFile(file: File?) {
+    if (file == null) return
+    val newMediaItem = MediaItem.fromUri(Uri.fromFile(file))
+    if (player?.currentMediaItem == newMediaItem) return
+    if (player?.isPlaying == true) player?.stop()
+    player?.setMediaItem(newMediaItem)
+    player?.prepare()
+    player?.play()
+  }
 
-    companion object {
-        fun newInstance(): VoiceSwitcherFragment = VoiceSwitcherFragment()
-    }
+  companion object {
+    fun newInstance(): VoiceSwitcherFragment = VoiceSwitcherFragment()
+  }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -184,130 +184,117 @@ private fun VoiceSwitcherScreen(
     callback: VoiceSwitcherCallback,
     modifier: Modifier,
 ) {
-    ConstraintLayout(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.White)
+  ConstraintLayout(modifier = modifier.fillMaxSize().background(Color.White)) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier =
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).constrainAs(createRef()) {
+              top.linkTo(parent.top)
+            },
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .constrainAs(createRef()) {
-                    top.linkTo(parent.top)
-                },
-        ) {
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(text = "Pick my voice", fontWeight = FontWeight.SemiBold, fontSize = 24.sp)
-            AnimatedIcon(shouldPlay = props.shouldPlayVoice, modifier = Modifier.fillMaxWidth())
-            Text(text = "Find the voice that resonates with you")
-            Spacer(modifier = Modifier.height(24.dp))
-            props.items?.let { items ->
-                FlowRow(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .selectableGroup()
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                ) {
-                    for (index in items.indices) {
-                        val item = items[index]
-                        val cardColor =
-                            if (index % 2 == 1) Color.Yellow.copy(alpha = 0.2f) else Color.Red.copy(alpha = 0.1f)
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth(0.49f)
-                                .background(cardColor, shape = RoundedCornerShape(8.dp))
-                                .let {
-                                    if (item.isActive)
-                                        it.border(1.dp, color = Orange600, shape = RoundedCornerShape(8.dp))
-                                    else
-                                        it
-                                }
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { callback.onClickRadio(item.name) }
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(item.name, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.weight(1f))
-                                RadioButton(selected = item.isActive,
-                                    colors = RadioButtonDefaults.colors().copy(selectedColor = Orange600),
-                                    onClick = { callback.onClickRadio(item.name) })
+      Spacer(modifier = Modifier.height(24.dp))
+      Text(text = "Pick my voice", fontWeight = FontWeight.SemiBold, fontSize = 24.sp)
+      AnimatedIcon(shouldPlay = props.shouldPlayVoice, modifier = Modifier.fillMaxWidth())
+      Text(text = "Find the voice that resonates with you")
+      Spacer(modifier = Modifier.height(24.dp))
+      props.items?.let { items ->
+        FlowRow(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.selectableGroup().fillMaxWidth().padding(horizontal = 16.dp)) {
+              for (index in items.indices) {
+                val item = items[index]
+                val cardColor =
+                    if (index % 2 == 1) Color.Yellow.copy(alpha = 0.2f)
+                    else Color.Red.copy(alpha = 0.1f)
+                Column(
+                    modifier =
+                        Modifier.fillMaxWidth(0.49f)
+                            .background(cardColor, shape = RoundedCornerShape(8.dp))
+                            .let {
+                              if (item.isActive)
+                                  it.border(
+                                      1.dp, color = Orange600, shape = RoundedCornerShape(8.dp))
+                              else it
                             }
-                            val imageRequest = ImageRequest.Builder(LocalContext.current)
-                                .decoderFactory(SvgDecoder.Factory())
-                                .data(item.iconUri)
-                                .build()
-                            AsyncImage(
-                                imageRequest,
-                                contentDescription = item.name,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(max = 100.dp)
-                            )
-                        }
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { callback.onClickRadio(item.name) }) {
+                      Row(
+                          verticalAlignment = Alignment.CenterVertically,
+                          modifier = Modifier.fillMaxWidth()) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(item.name, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.weight(1f))
+                            RadioButton(
+                                selected = item.isActive,
+                                colors =
+                                    RadioButtonDefaults.colors().copy(selectedColor = Orange600),
+                                onClick = { callback.onClickRadio(item.name) })
+                          }
+                      val imageRequest =
+                          ImageRequest.Builder(LocalContext.current)
+                              .decoderFactory(SvgDecoder.Factory())
+                              .data(item.iconUri)
+                              .build()
+                      AsyncImage(
+                          imageRequest,
+                          contentDescription = item.name,
+                          modifier = Modifier.fillMaxWidth().heightIn(max = 100.dp))
                     }
-                }
+              }
             }
-            Spacer(modifier = Modifier.height(64.dp))
-        }
-        Button(
-            colors = ButtonDefaults.buttonColors()
-                .copy(containerColor = Color.Transparent, disabledContainerColor = Color.Transparent),
-            onClick = callback.onClickNext,
-            enabled = props.currentVoiceFile != null,
-            contentPadding = PaddingValues(0.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .constrainAs(createRef()) {
-                    bottom.linkTo(parent.bottom)
-                },
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .let {
-                        if (props.currentVoiceFile == null) {
-                            it.background(Color.LightGray, RoundedCornerShape(50))
-                        } else {
-                            val brush = Brush.verticalGradient(
-                                Pair(0f, Orange600), Pair(0.8f, Orange400)
-                            )
-                            it.background(brush, RoundedCornerShape(50))
-                        }
-                    }
-            ) {
-                Text(
-                    text = "Next",
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp),
-                )
-            }
-        }
+      }
+      Spacer(modifier = Modifier.height(64.dp))
     }
+    Button(
+        colors =
+            ButtonDefaults.buttonColors()
+                .copy(
+                    containerColor = Color.Transparent, disabledContainerColor = Color.Transparent),
+        onClick = callback.onClickNext,
+        enabled = props.currentVoiceFile != null,
+        contentPadding = PaddingValues(0.dp),
+        modifier =
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp).constrainAs(createRef()) {
+              bottom.linkTo(parent.bottom)
+            },
+    ) {
+      Box(
+          contentAlignment = Alignment.Center,
+          modifier =
+              Modifier.fillMaxWidth().let {
+                if (props.currentVoiceFile == null) {
+                  it.background(Color.LightGray, RoundedCornerShape(50))
+                } else {
+                  val brush = Brush.verticalGradient(Pair(0f, Orange600), Pair(0.8f, Orange400))
+                  it.background(brush, RoundedCornerShape(50))
+                }
+              }) {
+            Text(
+                text = "Next",
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            )
+          }
+    }
+  }
 }
 
 @Composable
 private fun AnimatedIcon(shouldPlay: Boolean, modifier: Modifier = Modifier) {
-    val composition by rememberLottieComposition(
-        LottieCompositionSpec.Url("https://static.dailyfriend.ai/images/mascot-animation.json")
-    )
-    val animationState = animateLottieCompositionAsState(
-        composition,
-        isPlaying = shouldPlay,
-        iterations = 1,
-        restartOnPlay = true,
-        cancellationBehavior = LottieCancellationBehavior.OnIterationFinish,
-    )
-    LottieAnimation(composition, progress = { animationState.progress }, modifier = modifier)
+  val composition by
+      rememberLottieComposition(
+          LottieCompositionSpec.Url("https://static.dailyfriend.ai/images/mascot-animation.json"))
+  val animationState =
+      animateLottieCompositionAsState(
+          composition,
+          isPlaying = shouldPlay,
+          iterations = 1,
+          restartOnPlay = true,
+          cancellationBehavior = LottieCancellationBehavior.OnIterationFinish,
+      )
+  LottieAnimation(composition, progress = { animationState.progress }, modifier = modifier)
 }
