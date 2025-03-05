@@ -52,6 +52,9 @@ import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -71,6 +74,8 @@ import dev.syamsu.onboardingai.feature.voiceswitcher.domain.VoiceSwitcherProps
 import dev.syamsu.onboardingai.shared.theme.AiAppTheme
 import dev.syamsu.onboardingai.shared.theme.Orange400
 import dev.syamsu.onboardingai.shared.theme.Orange600
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.io.File
 
 class VoiceSwitcherFragment : Fragment() {
@@ -136,6 +141,17 @@ class VoiceSwitcherFragment : Fragment() {
       )
     }
   }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                voiceSwitcherVm.streamAudio()?.collect {
+
+                }
+            }
+        }
+    }
 
   private fun createScreen() =
       ComposeView(requireContext()).apply {

@@ -10,6 +10,8 @@ import io.ktor.client.statement.bodyAsBytes
 import java.io.File
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 
 class VoiceSwitcherRepositoryImpl(private val context: Context) : VoiceSwitcherRepository {
@@ -57,4 +59,18 @@ class VoiceSwitcherRepositoryImpl(private val context: Context) : VoiceSwitcherR
         }
         return@withContext null
       }
+
+    override fun getVoiceAudioStream(voiceId: Int, sampleId: Int): Flow<ByteArray>? {
+        return flow {
+            val response: HttpResponse =
+                createKtorClient().use {
+                    it.get("URL Palsu")
+                }
+            if (response.status.value in (200..<300)) {
+                return@flow
+            }
+            val body = response.bodyAsBytes()
+            emit(body)
+        }
+    }
 }
