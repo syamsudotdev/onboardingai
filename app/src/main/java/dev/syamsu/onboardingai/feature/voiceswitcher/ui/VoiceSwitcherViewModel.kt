@@ -49,7 +49,9 @@ class VoiceSwitcherViewModel(private val voiceRepository: VoiceSwitcherRepositor
     voiceSwitcherProps = voiceSwitcherProps.copy(shouldPlayVoice = false)
   }
 
-    fun streamAudio() = voiceRepository.getVoiceAudioStream(voiceSwitcherProps.currentVoiceId!!, voiceSwitcherProps.currentSampleId!!)
+  fun streamAudio() =
+      voiceRepository.getVoiceAudioStream(
+          voiceSwitcherProps.currentVoiceId!!, voiceSwitcherProps.currentSampleId!!)
 
   companion object {
     val Factory: ViewModelProvider.Factory = viewModelFactory {

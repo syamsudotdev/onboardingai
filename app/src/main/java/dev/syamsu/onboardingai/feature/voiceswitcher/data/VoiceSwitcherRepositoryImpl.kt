@@ -7,12 +7,15 @@ import dev.syamsu.onboardingai.shared.network.createKtorClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.utils.io.readBuffer
 import java.io.File
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
+import kotlinx.io.readByteArray
 
 class VoiceSwitcherRepositoryImpl(private val context: Context) : VoiceSwitcherRepository {
 
@@ -60,17 +63,16 @@ class VoiceSwitcherRepositoryImpl(private val context: Context) : VoiceSwitcherR
         return@withContext null
       }
 
-    override fun getVoiceAudioStream(voiceId: Int, sampleId: Int): Flow<ByteArray>? {
-        return flow {
-            val response: HttpResponse =
-                createKtorClient().use {
-                    it.get("URL Palsu")
-                }
-            if (response.status.value in (200..<300)) {
-                return@flow
-            }
-            val body = response.bodyAsBytes()
-            emit(body)
-        }
+  override fun getVoiceAudioStream(voiceId: Int, sampleId: Int): Flow<ByteArray>? {
+    return flow {
+      val response: HttpResponse = createKtorClient().use { it.get("URL Palsu") }
+      if (response.status.value in (200..<300)) {
+        return@flow
+      }
+      val responseBuffer = response.bodyAsChannel().readBuffer()
+      while (!responseBuffer.exhausted()) {
+        emit(responseBuffer.readByteArray())
+      }
     }
+  }
 }

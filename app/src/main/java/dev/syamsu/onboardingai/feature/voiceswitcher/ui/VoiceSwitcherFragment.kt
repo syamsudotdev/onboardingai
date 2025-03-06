@@ -74,9 +74,8 @@ import dev.syamsu.onboardingai.feature.voiceswitcher.domain.VoiceSwitcherProps
 import dev.syamsu.onboardingai.shared.theme.AiAppTheme
 import dev.syamsu.onboardingai.shared.theme.Orange400
 import dev.syamsu.onboardingai.shared.theme.Orange600
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import java.io.File
+import kotlinx.coroutines.launch
 
 class VoiceSwitcherFragment : Fragment() {
 
@@ -142,16 +141,14 @@ class VoiceSwitcherFragment : Fragment() {
     }
   }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                voiceSwitcherVm.streamAudio()?.collect {
-
-                }
-            }
-        }
+  override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    super.onViewCreated(view, savedInstanceState)
+    lifecycleScope.launch {
+      viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+        voiceSwitcherVm.streamAudio()?.collect {}
+      }
     }
+  }
 
   private fun createScreen() =
       ComposeView(requireContext()).apply {
